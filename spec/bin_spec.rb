@@ -19,6 +19,15 @@ describe ActiveSupport::Cache::Bin do
   it "can set default expires_in" do
     ActiveSupport::Cache::Bin.new(collection, :expires_in => 5.minutes).expires_in.should == 5.minutes
   end
+  
+  describe "#write" do
+    let(:document) { collection.find_one(:_id => 'foo') }
+    it "should be able to store in raw format" do
+      store.insert('foo', 'bar', :raw => true)
+      document['value'].should == 'bar'
+      document['raw'].should be_true
+    end
+  end
 
   describe "#write" do
     before(:each) do

@@ -43,12 +43,12 @@ module ActiveSupport
 
       def insert(key, entry, options)
         expires = Time.now.utc + options.fetch(:expires_in, expires_in)
-        value   = options[:raw] ? entry.value : BSON::Binary.new(Marshal.dump(entry.value))
+        value   = options[:raw] ? entry : BSON::Binary.new(Marshal.dump(entry))
         doc = {
             :_id        => key,
             :value      => value,
             :expires_at => expires,
-            :raw        => options[:raw],
+            :raw        => options[:raw]
         }
 		if ! mult
           collection.insert(doc)
