@@ -40,6 +40,7 @@ describe ActiveSupport::Cache::Bin do
     end
 
     it "should be able to store in raw format" do
+      collection.remove(:_id => 'foo')
       store.write('foo', 'bar', :raw => true)
       document['value'].should == 'bar'
       document['raw'].should be_true
@@ -50,6 +51,7 @@ describe ActiveSupport::Cache::Bin do
     end
 
     it "sets expires_at if expires_in provided" do
+      collection.remove(:_id => 'foo')
       store.write('foo', 'bar', :expires_in => 5.seconds)
       document['expires_at'].to_i.should == (Time.now.utc + 5.seconds).to_i
     end
