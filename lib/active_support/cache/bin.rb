@@ -3,10 +3,10 @@ require 'mongo'
 module ActiveSupport
   module Cache
     class Bin < Store
-      attr_reader :collection, :options
+      attr_reader :collection, :options, :mult
 
       def initialize(collection, options={})
-        @collection, @options = collection, options
+        @collection, @options, @mult = collection, options, false
       end
 
       def expires_in
@@ -33,7 +33,23 @@ module ActiveSupport
         collection.stats
       end
 
+      def multi
+        @mult = true
+        @store = []
+        yield
+        @mult = false
+        collection.insert(@store)
+      end
+
     private
+      def insert(doc)
+		if ! mult
+          collection.insert(doc)
+        else
+          @store << doc
+        end
+      end
+
       def counter_key_upsert(action, key, amount, options)
         options = merged_options(options)
         instrument(action, key, :amount => amount) do
@@ -64,14 +80,13 @@ module ActiveSupport
       def write_entry(key, entry, options)
         expires = Time.now.utc + options.fetch(:expires_in, expires_in)
         value   = options[:raw] ? entry.value : BSON::Binary.new(Marshal.dump(entry.value))
-        query   = {:_id => key}
-        updates = {'$set' => {
-          :value      => value,
-          :expires_at => expires,
-          :raw        => options[:raw],
-        }}
-
-        collection.update(query, updates, :upsert => true)
+        
+        insert({
+            :_id        => key,
+            :value      => value,
+            :expires_at => expires,
+            :raw        => options[:raw],
+        })
       end
 
       def delete_entry(key, options)
