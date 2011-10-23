@@ -20,12 +20,24 @@ describe ActiveSupport::Cache::Bin do
     ActiveSupport::Cache::Bin.new(collection, :expires_in => 5.minutes).expires_in.should == 5.minutes
   end
   
-  describe "#write" do
+  describe "#insert" do
     let(:document) { collection.find_one(:_id => 'foo') }
     it "should be able to store in raw format" do
       store.insert('foo', 'bar', :raw => true)
       document['value'].should == 'bar'
       document['raw'].should be_true
+    end
+
+    it "sets expires_at if expires_in provided" do
+      store.insert('foo', 'bar', :expires_in => 5.seconds)
+      document['expires_at'].to_i.should == (Time.now.utc + 5.seconds).to_i
+    end
+
+    it "is able to wirk within 'multi'" do
+      store.multi {
+        store.insert('foo', 'bar')
+      }
+      document['value'] == 'bar'
     end
   end
 

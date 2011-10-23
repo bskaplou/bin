@@ -41,7 +41,7 @@ module ActiveSupport
         collection.insert(@store)
       end
 
-      def insert(key, entry, options)
+      def insert(key, entry, options = {})
         expires = Time.now.utc + options.fetch(:expires_in, expires_in)
         value   = options[:raw] ? entry : BSON::Binary.new(Marshal.dump(entry))
         doc = {
