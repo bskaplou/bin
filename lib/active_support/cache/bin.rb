@@ -93,15 +93,11 @@ module ActiveSupport
         deserialize_doc(collection.find_one(query))
       end
 
-
       def write_entry(key, entry, options)
         expires = Time.now.utc + options.fetch(:expires_in, expires_in)
         value   = options[:raw] ? entry.value : BSON::Binary.new(Marshal.dump(entry.value))
-        if options[:once]
-          insert(key, value, expires, options[:raw])
-        else
-          update(key, value, expires, options[:raw])
-        end
+        m = method(options[:once] ? :insert : :update)
+        m[key, value, expires, options[:raw]]
       end
 
       def delete_entry(key, options)
