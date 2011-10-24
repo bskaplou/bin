@@ -41,15 +41,14 @@ module ActiveSupport
         collection.insert(@store)
       end
 
-      def insert(key, entry, options = {})
-        expires = Time.now.utc + options.fetch(:expires_in, expires_in)
-        value   = options[:raw] ? entry : BSON::Binary.new(Marshal.dump(entry))
+    private
+      def insert(key, value, expires, raw)
         doc = {
             :_id        => key,
             :value      => value,
             :expires_at => expires
         }
-        doc[:raw] = options[:raw] if options[:raw]
+        doc[:raw] = raw if raw
         if ! mult
           collection.insert(doc)
         else
@@ -57,7 +56,6 @@ module ActiveSupport
         end
       end
 
-    private
       def counter_key_upsert(action, key, amount, options)
         options = merged_options(options)
         instrument(action, key, :amount => amount) do
@@ -89,13 +87,17 @@ module ActiveSupport
       def write_entry(key, entry, options)
         expires = Time.now.utc + options.fetch(:expires_in, expires_in)
         value   = options[:raw] ? entry.value : BSON::Binary.new(Marshal.dump(entry.value))
-        query   = {:_id => key}
-        updates = {'$set' => {
-          :value      => value,
-          :expires_at => expires,
-        }}
-        updates['$set'][:raw] = options[:raw] if options[:raw]
-        collection.update(query, updates, :upsert => true)
+        if options[:once]
+          insert(key, value, expires, options[:raw])
+        else
+          query   = {:_id => key}
+          updates = {'$set' => {
+            :value      => value,
+            :expires_at => expires,
+          }}
+          updates['$set'][:raw] = options[:raw] if options[:raw]
+          collection.update(query, updates, :upsert => true)
+        end
       end
 
       def delete_entry(key, options)

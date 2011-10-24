@@ -20,29 +20,6 @@ describe ActiveSupport::Cache::Bin do
     ActiveSupport::Cache::Bin.new(collection, :expires_in => 5.minutes).expires_in.should == 5.minutes
   end
   
-  describe "#insert" do
-    let(:document) { collection.find_one(:_id => 'foo') }
-    it "should be able to store in raw format" do
-      store.insert('foo', 'bar', :raw => true)
-      document['value'].should == 'bar'
-      document['raw'].should be_true
-    end
-
-    it "sets expires_at if expires_in provided" do
-      store.insert('foo', 'bar', :expires_in => 5.seconds)
-      document['expires_at'].to_i.should == (Time.now.utc + 5.seconds).to_i
-    end
-
-    it "is able to work within 'multi'" do
-      store.multi {
-        store.insert('foo', 'bar')
-        store.insert('foobar', 'barfoo')
-      }
-      document['value'] == 'bar'
-      collection.find_one(:_id => 'foobar')['value'] == 'barfoo'
-    end
-  end
-
   describe "#write" do
     before(:each) do
       store.write('foo', 'bar')
@@ -82,6 +59,29 @@ describe ActiveSupport::Cache::Bin do
       doc = collection.find_one(:_id => 'baz')
       doc.should_not be_nil
       doc['_id'].should be_instance_of(String)
+    end
+
+    it "should be able to store in raw format even with once option" do
+      collection.remove()
+      store.write('foo', 'bar', :raw => true, :once => true)
+      document['value'].should == 'bar'
+      document['raw'].should be_true
+    end
+
+    it "sets expires_at if expires_in provided with once option as well" do
+      collection.remove()
+      store.write('foo', 'bar', :expires_in => 5.seconds, :once => true)
+      document['expires_at'].to_i.should == (Time.now.utc + 5.seconds).to_i
+    end
+
+    it "is able to work within 'multi'" do
+      collection.remove()
+      store.multi {
+        store.write('foo', 'bar', :once => true)
+        store.write('foobar', 'barfoo', :once => true)
+      }
+      document['value'] == 'bar'
+      collection.find_one(:_id => 'foobar')['value'] == 'barfoo'
     end
   end
 
