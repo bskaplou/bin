@@ -47,10 +47,10 @@ module ActiveSupport
         doc = {
             :_id        => key,
             :value      => value,
-            :expires_at => expires,
-            :raw        => options[:raw]
+            :expires_at => expires
         }
-		if ! mult
+        doc[:raw] = options[:raw] if options[:raw]
+        if ! mult
           collection.insert(doc)
         else
           @store << doc
@@ -93,8 +93,8 @@ module ActiveSupport
         updates = {'$set' => {
           :value      => value,
           :expires_at => expires,
-          :raw        => options[:raw],
         }}
+        updates['$set'][:raw] = options[:raw] if options[:raw]
         collection.update(query, updates, :upsert => true)
       end
 

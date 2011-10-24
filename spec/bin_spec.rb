@@ -33,11 +33,13 @@ describe ActiveSupport::Cache::Bin do
       document['expires_at'].to_i.should == (Time.now.utc + 5.seconds).to_i
     end
 
-    it "is able to wirk within 'multi'" do
+    it "is able to work within 'multi'" do
       store.multi {
         store.insert('foo', 'bar')
+        store.insert('foobar', 'barfoo')
       }
       document['value'] == 'bar'
+      collection.find_one(:_id => 'foobar')['value'] == 'barfoo'
     end
   end
 
