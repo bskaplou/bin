@@ -56,6 +56,16 @@ module ActiveSupport
         end
       end
 
+      def update(key, value, expires, raw)
+          query   = {:_id => key}
+          updates = {'$set' => {
+            :value      => value,
+            :expires_at => expires,
+          }}
+          updates['$set'][:raw] = raw if raw
+          collection.update(query, updates, :upsert => true)
+      end
+
       def counter_key_upsert(action, key, amount, options)
         options = merged_options(options)
         instrument(action, key, :amount => amount) do
@@ -90,13 +100,7 @@ module ActiveSupport
         if options[:once]
           insert(key, value, expires, options[:raw])
         else
-          query   = {:_id => key}
-          updates = {'$set' => {
-            :value      => value,
-            :expires_at => expires,
-          }}
-          updates['$set'][:raw] = options[:raw] if options[:raw]
-          collection.update(query, updates, :upsert => true)
+          update(key, value, expires, options[:raw])
         end
       end
 
